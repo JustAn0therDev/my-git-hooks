@@ -1,26 +1,34 @@
-OUTPUT=$(dotnet test)
+#!/bin/sh
 
-SUCCESS=0
+OUTPUT=$(dotnet test)
+RESULT=0
 
 while read -r LINE; do
-	# @Testing: testing commit.
 	echo $LINE
     if [[ $LINE == *"Aprovado"* ]] || [[ $LINE == *"Passed"* ]]
 	then
-		SUCCESS=1
+		RESULT=1
+		break
+	elif [[ $LINE == *"MSB1003"* ]]
+	then
+		RESULT=2
+		break
+	elif [[ $LINE == *"Com falha"* || $LINE == *"Failed"* ]]
+	then
+		RESULT=0
 		break
     fi
-
 done <<< "$OUTPUT"
 
-if [[ $SUCCESS == 1 ]]
+if [[ $RESULT == 1 ]]
 then
-	read -p "Todos os testes passaram. Por favor, insira sua mensagem de commit: " COMMIT
-	git add .
-	git commit -m "$COMMIT"
-	git push
+	echo "Todos os testes passaram, efetuando commit..."
+	exit 0
+elif [[ $RESULT == 2 ]]
+then
+	echo "Este projeto não possui testes, efetuando commit..."
+	exit 0
 else
-	echo "Não é possível realizar commit pois alguns dos testes não passaram. Por favor, verifique o(s) projeto(s) de teste e tente novamente."
+	echo "Não foi possível continuar com o commit pois um ou mais testes não passaram. Por favor, verifique o(s) projeto(s) de teste e tente novamente."
+	exit 1
 fi
-
-echo $SUCCESS
